@@ -23,6 +23,7 @@ import {
 import {
   currentMonthKey,
   lastMonths,
+  monthBounds,
   monthLabelMedium,
   monthLabelShort,
   shiftMonth,
@@ -35,13 +36,6 @@ const SPANS = [
   { id: "6", label: "6 months" },
   { id: "12", label: "12 months" },
 ];
-
-/** Inclusive month bounds as ISO dates, so `filterTxns` can use them directly. */
-function monthBounds(key: string) {
-  const [y, m] = key.split("-").map(Number);
-  const last = new Date(y, m, 0).getDate();
-  return { from: `${key}-01`, to: `${key}-${String(last).padStart(2, "0")}` };
-}
 
 export default function TrendsPage() {
   const settings = useSettings();

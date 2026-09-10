@@ -10,7 +10,7 @@ responsibility — see [Backups](#backups) below.
 
 | Screen | What you get |
 | --- | --- |
-| **Summary** | Income, expenses and net for a period, broken down by group and by category |
+| **Summary** | Income, expenses and net for a period, how each group is tracking against its monthly limit, and breakdowns by group and category |
 | **Expenses** | One tab per group (Personal / Business by default), filterable by category |
 | **Income** | Same, for money coming in |
 | **Trends** | Income vs expenses per month, net per month, and a side-by-side comparison of any two months |
@@ -18,6 +18,18 @@ responsibility — see [Backups](#backups) below.
 
 **Groups** are the "separate pages" — each one gets its own tab, and the Summary
 adds them all up. Two ship by default; add, rename or remove them in Settings.
+
+**Monthly limits (ceilings).** Any expense group can be given a monthly spending
+limit in Settings. Once set, Summary and the Expenses tab show how much of it is
+gone, what is left, and how many days remain in the month. The bar turns amber
+past 80% of the limit and red once it is blown, and a tick mark on the bar shows
+where you would be if you spent evenly through the month — so "faster than the
+month" means you are outrunning your own budget even while still under it.
+
+Limits are stored with their own currency, exactly like an entry, so switching
+your main currency reprices them instead of silently changing what they mean.
+Clearing the field removes the limit. There are no push notifications: with no
+server there is nothing to send them, so the limit is shown in the app instead.
 
 **Categories** are the "type" you filter and total by. Expenses and income have
 their own separate lists.

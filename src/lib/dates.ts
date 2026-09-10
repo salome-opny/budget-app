@@ -55,6 +55,44 @@ export function lastMonths(endKey: string, count: number): string[] {
   );
 }
 
+/** Inclusive ISO bounds of a month, e.g. "2026-09" -> 2026-09-01 .. 2026-09-30 */
+export function monthBounds(key: string): { from: string; to: string } {
+  const [y, m] = key.split("-").map(Number);
+  const lastDay = new Date(y, m, 0).getDate();
+  return { from: `${key}-01`, to: `${key}-${String(lastDay).padStart(2, "0")}` };
+}
+
+/** Days in a month that have already happened, as a 0..1 fraction. */
+export function monthProgress(key: string, today: string = todayISO()): number {
+  const { from, to } = monthBounds(key);
+  if (today > to) return 1;
+  if (today < from) return 0;
+  const [y, m] = key.split("-").map(Number);
+  const daysInMonth = new Date(y, m, 0).getDate();
+  return Number(today.slice(8)) / daysInMonth;
+}
+
+/** Whole days left in a month, counting today as remaining. */
+export function daysLeftInMonth(key: string, today: string = todayISO()): number {
+  const { from, to } = monthBounds(key);
+  if (today > to) return 0;
+  const [y, m] = key.split("-").map(Number);
+  const daysInMonth = new Date(y, m, 0).getDate();
+  if (today < from) return daysInMonth;
+  return daysInMonth - Number(today.slice(8)) + 1;
+}
+
+/**
+ * Which month a monthly ceiling should be measured against, given the period
+ * the user is looking at. Multi-month periods fall back to the current month,
+ * because a monthly limit has no meaning across a quarter.
+ */
+export function budgetMonthFor(period: PeriodId): string {
+  return period === "last-month"
+    ? shiftMonth(currentMonthKey(), -1)
+    : currentMonthKey();
+}
+
 export function formatDateShort(iso: string): string {
   const [, m, d] = iso.split("-");
   return `${MONTH_NAMES[Number(m) - 1].slice(0, 3)} ${Number(d)}`;

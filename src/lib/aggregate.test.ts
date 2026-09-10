@@ -1,8 +1,24 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
-import { byCategory, filterTxns, monthlyTotals, monthsWithData, sumPrimary } from "./aggregate";
-import { inRange, lastMonths, monthKey, monthLabel, shiftMonth } from "./dates";
-import type { Category, Txn } from "./types";
+import {
+  budgetStatuses,
+  byCategory,
+  filterTxns,
+  monthlyTotals,
+  monthsWithData,
+  NEAR_LIMIT_RATIO,
+  sumPrimary,
+} from "./aggregate";
+import {
+  daysLeftInMonth,
+  inRange,
+  lastMonths,
+  monthKey,
+  monthLabel,
+  monthProgress,
+  shiftMonth,
+} from "./dates";
+import type { Category, Group, Txn } from "./types";
 
 const settings = { primaryCurrency: "USD" as const, copPerUsd: 4000 };
 
@@ -118,4 +134,94 @@ test("monthsWithData is sorted and deduplicated", () => {
     txn({ date: "2026-09-20" }),
   ];
   assert.deepEqual(monthsWithData(rows), ["2026-07", "2026-09"]);
+});
+
+const group = (over: Partial<Group>): Group => ({
+  id: "g1",
+  name: "Personal",
+  kind: "expense",
+  order: 0,
+  color: "#000",
+  ...over,
+});
+
+test("budgetStatuses ignores groups without a ceiling", () => {
+  const groups = [
+    group({ id: "a", limitAmount: 1000, limitCurrency: "USD" }),
+    group({ id: "b" }),
+    group({ id: "c", limitAmount: null }),
+    group({ id: "d", limitAmount: 0, limitCurrency: "USD" }),
+  ];
+  const got = budgetStatuses([], settings, groups, "2026-08");
+  assert.deepEqual(got.map((s) => s.groupId), ["a"]);
+});
+
+test("budgetStatuses only counts that group's expenses in that month", () => {
+  const groups = [group({ id: "a", limitAmount: 1000, limitCurrency: "USD" })];
+  const rows = [
+    txn({ groupId: "a", date: "2026-08-05", amount: 300 }),
+    // Other group, other month, and income all have to be excluded.
+    txn({ groupId: "b", date: "2026-08-06", amount: 500 }),
+    txn({ groupId: "a", date: "2026-07-31", amount: 500 }),
+    txn({ groupId: "a", date: "2026-09-01", amount: 500 }),
+    txn({ groupId: "a", date: "2026-08-20", amount: 900, kind: "income" }),
+  ];
+  const [s] = budgetStatuses(rows, settings, groups, "2026-08");
+  assert.equal(s.spent, 300);
+  assert.equal(s.remaining, 700);
+});
+
+test("budgetStatuses converts a ceiling set in pesos", () => {
+  const groups = [group({ id: "a", limitAmount: 4000000, limitCurrency: "COP" })];
+  // 4,000,000 COP at 4000 per dollar is a $1,000 ceiling.
+  const [s] = budgetStatuses([txn({ groupId: "a", amount: 250 })], settings, groups, "2026-08");
+  assert.equal(s.limit, 1000);
+  assert.equal(s.ratio, 0.25);
+  assert.equal(s.state, "under");
+});
+
+test("budgetStatuses reports under, near and over", () => {
+  const mk = (spent: number) =>
+    budgetStatuses(
+      [txn({ groupId: "a", amount: spent })],
+      settings,
+      [group({ id: "a", limitAmount: 100, limitCurrency: "USD" })],
+      "2026-08"
+    )[0];
+  assert.equal(mk(50).state, "under");
+  assert.equal(mk(NEAR_LIMIT_RATIO * 100).state, "near");
+  assert.equal(mk(100).state, "near");
+  // Exactly at the ceiling is not yet over; a cent past it is.
+  assert.equal(mk(100.01).state, "over");
+  assert.equal(mk(150).state, "over");
+  assert.equal(mk(150).remaining, -50);
+});
+
+test("budgetStatuses puts the most strained group first", () => {
+  const groups = [
+    group({ id: "calm", limitAmount: 1000, limitCurrency: "USD" }),
+    group({ id: "blown", limitAmount: 100, limitCurrency: "USD" }),
+  ];
+  const rows = [
+    txn({ groupId: "calm", amount: 100 }),
+    txn({ groupId: "blown", amount: 150 }),
+  ];
+  assert.deepEqual(
+    budgetStatuses(rows, settings, groups, "2026-08").map((s) => s.groupId),
+    ["blown", "calm"]
+  );
+});
+
+test("monthProgress is 0 before, a fraction during, and 1 after", () => {
+  assert.equal(monthProgress("2026-08", "2026-07-15"), 0);
+  assert.equal(monthProgress("2026-08", "2026-09-01"), 1);
+  // August has 31 days.
+  assert.equal(monthProgress("2026-08", "2026-08-31"), 1);
+  assert.equal(monthProgress("2026-08", "2026-08-01"), 1 / 31);
+});
+
+test("daysLeftInMonth counts today as still available", () => {
+  assert.equal(daysLeftInMonth("2026-08", "2026-08-31"), 1);
+  assert.equal(daysLeftInMonth("2026-08", "2026-08-01"), 31);
+  assert.equal(daysLeftInMonth("2026-08", "2026-09-05"), 0);
 });

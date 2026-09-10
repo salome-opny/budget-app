@@ -7,6 +7,14 @@ export interface Group {
   kind: Kind;
   order: number;
   color: string;
+  /**
+   * Monthly spending ceiling, or null/undefined for no ceiling. Stored with its
+   * own currency like a transaction, so switching the main currency reprices it
+   * instead of silently changing what it means. Only meaningful on expense
+   * groups.
+   */
+  limitAmount?: number | null;
+  limitCurrency?: Currency;
 }
 
 export interface Category {

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import BackupCard from "@/components/BackupCard";
+import GroupLimitField from "@/components/GroupLimitField";
 import ManageList from "@/components/ManageList";
 import { Button, Card, Field, PageHeader, Segmented, inputClass } from "@/components/ui";
 import db from "@/lib/db";
@@ -121,7 +122,7 @@ export default function SettingsPage() {
           </h2>
           <p className="mt-1 mb-3 text-sm text-muted">
             {lens === "expense"
-              ? "Each group gets its own tab on the Expenses page. Two is the default; add as many as you want."
+              ? "Each group gets its own tab on the Expenses page. Give one a monthly limit and the app tracks how much of it is left."
               : "Separate tabs on the Income page. Keep one if you do not need the split."}
           </p>
           <ManageList
@@ -131,6 +132,14 @@ export default function SettingsPage() {
             onRename={renameGroup}
             onAdd={(name) => addGroup(name, lens).then(() => undefined)}
             onDelete={deleteGroup}
+            renderDetail={
+              lens === "expense"
+                ? (item) => {
+                    const g = groupsForLens.find((x) => x.id === item.id);
+                    return g ? <GroupLimitField group={g} settings={settings} /> : null;
+                  }
+                : undefined
+            }
           />
         </Card>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Button, inputClass } from "./ui";
 
 export interface ManageItem {
@@ -16,6 +16,7 @@ export default function ManageList({
   onRename,
   onAdd,
   onDelete,
+  renderDetail,
 }: {
   items: ManageItem[];
   /** How many entries reference each item, so deletion can warn honestly. */
@@ -24,6 +25,8 @@ export default function ManageList({
   onRename: (id: string, name: string) => Promise<void>;
   onAdd: (name: string) => Promise<void>;
   onDelete: (id: string, moveTo: string | null) => Promise<void>;
+  /** Extra controls under each row, e.g. the spending ceiling on expense groups. */
+  renderDetail?: (item: ManageItem) => ReactNode;
 }) {
   const [draft, setDraft] = useState("");
   const [confirming, setConfirming] = useState<string | null>(null);
@@ -87,6 +90,12 @@ export default function ManageList({
                   </svg>
                 </button>
               </div>
+
+              {renderDetail ? (
+                <div className="border-t border-border px-3 py-2.5">
+                  {renderDetail(item)}
+                </div>
+              ) : null}
 
               {isConfirming ? (
                 <div className="border-t border-border bg-surface-2 px-3 py-3">

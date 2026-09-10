@@ -9,6 +9,7 @@
   --color-muted: var(--muted);
   --color-income: var(--income);
   --color-expense: var(--expense);
+  --color-warn: var(--warn);
   --color-accent: var(--accent);
   --font-sans: ui-sans-serif, -apple-system, "SF Pro Text", "Segoe UI", system-ui,
     sans-serif;
@@ -24,6 +25,7 @@
   --muted: #78716a;
   --income: #2f8f6b;
   --expense: #c2683a;
+  --warn: #a8761f;
   --accent: #1b1917;
   color-scheme: light;
 }
@@ -38,6 +40,7 @@
     --muted: #9b948a;
     --income: #5cbd95;
     --expense: #e08a5c;
+    --warn: #d9a441;
     --accent: #f3f0ea;
     color-scheme: dark;
   }

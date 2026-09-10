@@ -1,5 +1,5 @@
-import { inRange, monthKey } from "./dates";
-import { txnInPrimary } from "./money";
+import { inRange, monthBounds, monthKey } from "./dates";
+import { toPrimary, txnInPrimary } from "./money";
 import type { Category, Group, Kind, Settings, Txn } from "./types";
 
 export interface Filter {
@@ -112,4 +112,54 @@ export function monthlyTotals(
 /** Every month that has at least one entry, oldest first. */
 export function monthsWithData(txns: Txn[]): string[] {
   return [...new Set(txns.map((t) => monthKey(t.date)))].sort();
+}
+
+/** Past this share of the ceiling, the app starts warning rather than informing. */
+export const NEAR_LIMIT_RATIO = 0.8;
+
+export interface BudgetStatus {
+  groupId: string;
+  name: string;
+  color: string;
+  /** Ceiling converted into the primary currency. */
+  limit: number;
+  spent: number;
+  /** Negative once the ceiling is blown. */
+  remaining: number;
+  ratio: number;
+  state: "under" | "near" | "over";
+}
+
+/**
+ * Ceilings are monthly, so this is always scoped to one month — never to the
+ * period filter the user happens to be looking at.
+ */
+export function budgetStatuses(
+  txns: Txn[],
+  settings: Rates,
+  groups: Group[],
+  month: string
+): BudgetStatus[] {
+  const { from, to } = monthBounds(month);
+  return groups
+    .filter((g) => g.kind === "expense" && (g.limitAmount ?? 0) > 0)
+    .map((g) => {
+      const limit = toPrimary(g.limitAmount!, g.limitCurrency ?? "USD", settings);
+      const spent = sumPrimary(
+        filterTxns(txns, { from, to, kind: "expense", groupId: g.id }),
+        settings
+      );
+      const ratio = limit > 0 ? spent / limit : 0;
+      return {
+        groupId: g.id,
+        name: g.name,
+        color: g.color,
+        limit,
+        spent,
+        remaining: limit - spent,
+        ratio,
+        state: ratio > 1 ? "over" : ratio >= NEAR_LIMIT_RATIO ? "near" : "under",
+      } satisfies BudgetStatus;
+    })
+    .sort((a, b) => b.ratio - a.ratio);
 }

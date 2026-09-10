@@ -42,6 +42,15 @@ export async function renameGroup(id: string, name: string): Promise<void> {
   await db.groups.update(id, { name });
 }
 
+/** Pass `null` to clear the ceiling. */
+export async function setGroupLimit(
+  id: string,
+  limitAmount: number | null,
+  limitCurrency: Currency
+): Promise<void> {
+  await db.groups.update(id, { limitAmount, limitCurrency });
+}
+
 /**
  * Deleting a group would orphan its transactions, so callers must say where
  * those go. Passing `null` deletes them along with the group.

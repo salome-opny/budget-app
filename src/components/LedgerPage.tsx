@@ -2,11 +2,12 @@
 
 import { useMemo, useState } from "react";
 import Breakdown from "./Breakdown";
+import BudgetCard from "./BudgetCard";
 import TxnList from "./TxnList";
 import TxnSheet from "./TxnSheet";
 import { Card, EmptyState, FloatingAdd, PageHeader, Segmented } from "./ui";
-import { byCategory, filterTxns, sumPrimary } from "@/lib/aggregate";
-import { PERIODS, periodRange, type PeriodId } from "@/lib/dates";
+import { budgetStatuses, byCategory, filterTxns, sumPrimary } from "@/lib/aggregate";
+import { budgetMonthFor, PERIODS, periodRange, type PeriodId } from "@/lib/dates";
 import { useCategories, useGroups, useNameMap, useSettings, useTxns } from "@/lib/hooks";
 import { formatMoney } from "@/lib/money";
 import type { Kind, Txn } from "@/lib/types";
@@ -31,7 +32,7 @@ export default function LedgerPage({ kind }: { kind: Kind }) {
   const currency = settings.primaryCurrency;
 
   const view = useMemo(() => {
-    if (!txns || !categories) return null;
+    if (!txns || !categories || !groups) return null;
     const scoped = filterTxns(txns, {
       ...periodRange(period),
       kind,
@@ -46,8 +47,11 @@ export default function LedgerPage({ kind }: { kind: Kind }) {
       slices: byCategory(scoped, settings, categories),
       listed,
       hasAny: txns.some((t) => t.kind === kind),
+      budgets: budgetStatuses(txns, settings, groups, budgetMonthFor(period)).filter(
+        (b) => groupId === ALL || b.groupId === groupId
+      ),
     };
-  }, [txns, categories, settings, period, groupId, categoryId, kind]);
+  }, [txns, categories, groups, settings, period, groupId, categoryId, kind]);
 
   function openNew() {
     setEditing(null);
@@ -103,6 +107,16 @@ export default function LedgerPage({ kind }: { kind: Kind }) {
           />
         ) : (
           <>
+            {!isIncome ? (
+              <BudgetCard
+                statuses={view.budgets}
+                currency={currency}
+                month={budgetMonthFor(period)}
+                title={groupId === ALL ? "Budget" : "Budget for this group"}
+                emptyHint={false}
+              />
+            ) : null}
+
             <Card>
               <div className="mb-3 flex items-baseline justify-between">
                 <h2 className="text-sm font-semibold">By category</h2>

@@ -3,9 +3,16 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import Breakdown from "@/components/Breakdown";
+import BudgetCard from "@/components/BudgetCard";
 import { Card, PageHeader, Segmented } from "@/components/ui";
-import { byCategory, byGroup, filterTxns, sumPrimary } from "@/lib/aggregate";
-import { PERIODS, periodRange, type PeriodId } from "@/lib/dates";
+import {
+  budgetStatuses,
+  byCategory,
+  byGroup,
+  filterTxns,
+  sumPrimary,
+} from "@/lib/aggregate";
+import { budgetMonthFor, PERIODS, periodRange, type PeriodId } from "@/lib/dates";
 import { useCategories, useGroups, useSettings, useTxns } from "@/lib/hooks";
 import { formatMoney } from "@/lib/money";
 import type { Kind } from "@/lib/types";
@@ -40,6 +47,7 @@ export default function SummaryPage() {
         settings,
         categories.filter((c) => c.kind === lens)
       ),
+      budgets: budgetStatuses(txns, settings, groups, budgetMonthFor(period)),
       count: scoped.length,
       totalCount: txns.length,
     };
@@ -93,6 +101,14 @@ export default function SummaryPage() {
             </div>
           </div>
         </Card>
+
+        {view.totalCount > 0 ? (
+          <BudgetCard
+            statuses={view.budgets}
+            currency={currency}
+            month={budgetMonthFor(period)}
+          />
+        ) : null}
 
         {view.totalCount === 0 ? (
           <Card>
