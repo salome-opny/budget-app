@@ -1,0 +1,93 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-income: var(--income);
+  --color-expense: var(--expense);
+  --color-accent: var(--accent);
+  --font-sans: ui-sans-serif, -apple-system, "SF Pro Text", "Segoe UI", system-ui,
+    sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+:root {
+  --bg: #f6f4f0;
+  --surface: #ffffff;
+  --surface-2: #efece6;
+  --border: #e1dcd2;
+  --text: #1b1917;
+  --muted: #78716a;
+  --income: #2f8f6b;
+  --expense: #c2683a;
+  --accent: #1b1917;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #131210;
+    --surface: #1d1b18;
+    --surface-2: #26231f;
+    --border: #33302a;
+    --text: #f3f0ea;
+    --muted: #9b948a;
+    --income: #5cbd95;
+    --expense: #e08a5c;
+    --accent: #f3f0ea;
+    color-scheme: dark;
+  }
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  /* Never bounce the whole page on iOS; inner scrollers handle it. */
+  overscroll-behavior-y: none;
+}
+
+/* Tabular numbers everywhere money is shown. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* iOS: don't let Safari zoom in when a small input is focused. */
+input,
+select,
+textarea,
+button {
+  font-size: 16px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+.safe-bottom {
+  padding-bottom: max(env(safe-area-inset-bottom), 0.5rem);
+}
+
+.safe-top {
+  padding-top: max(env(safe-area-inset-top), 0.5rem);
+}
+
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
