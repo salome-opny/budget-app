@@ -32,7 +32,7 @@ export default function BudgetCard({
       <Card>
         <h2 className="text-sm font-semibold">{title}</h2>
         <p className="mt-1 text-sm text-muted">
-          No spending limits set. Add one per group in{" "}
+          No limits or goals set. Add them per group in{" "}
           <Link href="/settings" className="underline">
             Settings
           </Link>{" "}
@@ -42,8 +42,22 @@ export default function BudgetCard({
     );
   }
 
-  const over = statuses.filter((s) => s.state === "over").length;
-  const near = statuses.filter((s) => s.state === "near").length;
+  const count = (state: BudgetStatus["state"]) =>
+    statuses.filter((s) => s.state === state).length;
+  const over = count("over");
+  const near = count("near");
+  const pastGoal = count("past-goal");
+  const groupsAre = (n: number) => (n === 1 ? "1 group is" : `${n} groups are`);
+
+  // Only the most urgent message; stacking three banners would bury the numbers.
+  const banner =
+    over > 0
+      ? { tone: "bg-expense/12 text-expense", text: `${groupsAre(over)} over the limit` }
+      : near > 0
+        ? { tone: "bg-warn/12 text-warn", text: `${groupsAre(near)} close to the limit` }
+        : pastGoal > 0
+          ? { tone: "bg-warn/12 text-warn", text: `${groupsAre(pastGoal)} past the goal` }
+          : null;
 
   return (
     <Card>
@@ -53,15 +67,9 @@ export default function BudgetCard({
       </div>
 
       {/* Redundant when the card is already showing that one group. */}
-      {statuses.length > 1 && (over > 0 || near > 0) ? (
-        <p
-          className={`mb-3 rounded-xl px-3 py-2 text-xs font-medium ${
-            over > 0 ? "bg-expense/12 text-expense" : "bg-warn/12 text-warn"
-          }`}
-        >
-          {over > 0
-            ? `${over} ${over === 1 ? "group is" : "groups are"} over budget`
-            : `${near} ${near === 1 ? "group is" : "groups are"} close to the limit`}
+      {statuses.length > 1 && banner ? (
+        <p className={`mb-3 rounded-xl px-3 py-2 text-xs font-medium ${banner.tone}`}>
+          {banner.text}
         </p>
       ) : null}
 

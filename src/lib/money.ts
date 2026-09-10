@@ -50,6 +50,26 @@ export function formatMoneyWhole(amount: number, currency: Currency): string {
   return WHOLE[currency].format(amount);
 }
 
+/**
+ * Short form for dense rows like the budget meters, where full peso figures
+ * ("COP 15,340,000 / COP 20,000,000") crowd the group name out on a phone.
+ * Under 100,000 it is exactly formatMoney; above that it rounds to k or M.
+ */
+export function formatMoneyShort(amount: number, currency: Currency): string {
+  const n = Math.abs(amount);
+  if (n < 100_000) return formatMoney(amount, currency);
+  const sign = amount < 0 ? "-" : "";
+  const prefix = currency === "USD" ? "$" : "COP\u00a0";
+  // "15.30" -> "15.3", "20.0" -> "20"
+  const trim = (x: string) => x.replace(/\.0+$|(\.\d*[1-9])0+$/, "$1");
+  // Start using M just below a million, so 999,600 never renders as "1000k".
+  const body =
+    n >= 999_500
+      ? `${trim((n / 1_000_000).toFixed(n >= 10_000_000 ? 1 : 2))}M`
+      : `${Math.round(n / 1_000)}k`;
+  return `${sign}${prefix}${body}`;
+}
+
 /** Compact form for tight spots like chart axes: $1.2k, $340. */
 export function formatCompact(amount: number, currency: Currency): string {
   const sign = amount < 0 ? "-" : "";

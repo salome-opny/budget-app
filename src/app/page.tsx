@@ -61,9 +61,9 @@ export default function SummaryPage() {
     <>
       <PageHeader
         title="Summary"
-        subtitle={`Everything in ${currency}${
-          currency === "USD" ? "" : ""
-        } · ${view.count} ${view.count === 1 ? "entry" : "entries"}`}
+        subtitle={`Everything in ${currency} · ${view.count} ${
+          view.count === 1 ? "entry" : "entries"
+        }`}
       />
 
       <div className="space-y-4">

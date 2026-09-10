@@ -42,13 +42,16 @@ export async function renameGroup(id: string, name: string): Promise<void> {
   await db.groups.update(id, { name });
 }
 
-/** Pass `null` to clear the ceiling. */
-export async function setGroupLimit(
+/** Fields left out stay as they are; pass `null` to clear a limit or a goal. */
+export async function setGroupBudget(
   id: string,
-  limitAmount: number | null,
-  limitCurrency: Currency
+  patch: {
+    limitAmount?: number | null;
+    goalAmount?: number | null;
+    budgetCurrency?: Currency;
+  }
 ): Promise<void> {
-  await db.groups.update(id, { limitAmount, limitCurrency });
+  await db.groups.update(id, patch);
 }
 
 /**
@@ -127,7 +130,7 @@ export async function buildBackup(): Promise<Backup> {
     categories,
     txns,
     settings: {
-      primaryCurrency: settings?.primaryCurrency ?? "USD",
+      primaryCurrency: settings?.primaryCurrency ?? "COP",
       copPerUsd: settings?.copPerUsd ?? 4000,
     },
   };
@@ -146,7 +149,7 @@ export async function restoreBackup(raw: unknown): Promise<{ txns: number }> {
     await db.txns.bulkAdd(data.txns ?? []);
     await db.settings.put({
       id: "settings",
-      primaryCurrency: data.settings?.primaryCurrency ?? "USD",
+      primaryCurrency: data.settings?.primaryCurrency ?? "COP",
       copPerUsd: data.settings?.copPerUsd ?? 4000,
       lastBackupAt: Date.now(),
     });

@@ -117,22 +117,36 @@ export function monthsWithData(txns: Txn[]): string[] {
 /** Past this share of the ceiling, the app starts warning rather than informing. */
 export const NEAR_LIMIT_RATIO = 0.8;
 
+export type BudgetState = "under" | "past-goal" | "near" | "over";
+
 export interface BudgetStatus {
   groupId: string;
   name: string;
   color: string;
-  /** Ceiling converted into the primary currency. */
-  limit: number;
+  /** Ceiling in the primary currency, or null when only a goal is set. */
+  limit: number | null;
+  /** Goal in the primary currency, or null when only a ceiling is set. */
+  goal: number | null;
   spent: number;
-  /** Negative once the ceiling is blown. */
+  /** What the bar measures against: the ceiling when there is one, else the goal. */
+  scale: number;
+  /** Scale minus spent. Negative once it is blown. */
   remaining: number;
+  /** Goal minus spent, or null without a goal. Negative once past it. */
+  toGoal: number | null;
+  /** spent / scale */
   ratio: number;
-  state: "under" | "near" | "over";
+  /**
+   * The most urgent that applies: over the ceiling, then close to it, then past
+   * the goal. Passing the goal is deliberately milder than nearing the ceiling —
+   * the goal is what she hopes for, the ceiling is what she can afford.
+   */
+  state: BudgetState;
 }
 
 /**
- * Ceilings are monthly, so this is always scoped to one month — never to the
- * period filter the user happens to be looking at.
+ * Limits and goals are monthly, so this is always scoped to one month — never
+ * to the period filter the user happens to be looking at.
  */
 export function budgetStatuses(
   txns: Txn[],
@@ -141,24 +155,37 @@ export function budgetStatuses(
   month: string
 ): BudgetStatus[] {
   const { from, to } = monthBounds(month);
+  const isSet = (n: number | null | undefined): n is number => (n ?? 0) > 0;
+
   return groups
-    .filter((g) => g.kind === "expense" && (g.limitAmount ?? 0) > 0)
+    .filter((g) => g.kind === "expense" && (isSet(g.limitAmount) || isSet(g.goalAmount)))
     .map((g) => {
-      const limit = toPrimary(g.limitAmount!, g.limitCurrency ?? "USD", settings);
+      const currency = g.budgetCurrency ?? settings.primaryCurrency;
+      const limit = isSet(g.limitAmount) ? toPrimary(g.limitAmount, currency, settings) : null;
+      const goal = isSet(g.goalAmount) ? toPrimary(g.goalAmount, currency, settings) : null;
       const spent = sumPrimary(
         filterTxns(txns, { from, to, kind: "expense", groupId: g.id }),
         settings
       );
-      const ratio = limit > 0 ? spent / limit : 0;
+      const scale = limit ?? goal ?? 0;
+
+      let state: BudgetState = "under";
+      if (limit !== null && spent > limit) state = "over";
+      else if (limit !== null && limit > 0 && spent / limit >= NEAR_LIMIT_RATIO) state = "near";
+      else if (goal !== null && spent > goal) state = "past-goal";
+
       return {
         groupId: g.id,
         name: g.name,
         color: g.color,
         limit,
+        goal,
         spent,
-        remaining: limit - spent,
-        ratio,
-        state: ratio > 1 ? "over" : ratio >= NEAR_LIMIT_RATIO ? "near" : "under",
+        scale,
+        remaining: scale - spent,
+        toGoal: goal === null ? null : goal - spent,
+        ratio: scale > 0 ? spent / scale : 0,
+        state,
       } satisfies BudgetStatus;
     })
     .sort((a, b) => b.ratio - a.ratio);

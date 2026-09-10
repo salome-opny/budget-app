@@ -8,13 +8,21 @@ export interface Group {
   order: number;
   color: string;
   /**
-   * Monthly spending ceiling, or null/undefined for no ceiling. Stored with its
-   * own currency like a transaction, so switching the main currency reprices it
-   * instead of silently changing what it means. Only meaningful on expense
-   * groups.
+   * Monthly spending ceiling: the most she allows herself. Null/undefined means
+   * no ceiling. Only meaningful on expense groups.
    */
   limitAmount?: number | null;
-  limitCurrency?: Currency;
+  /**
+   * Monthly spending goal: what she actually aims to spend, normally below the
+   * ceiling. Null/undefined means no goal.
+   */
+  goalAmount?: number | null;
+  /**
+   * The one currency both the ceiling and the goal are written in. Stored the
+   * way a transaction's currency is, so switching the main currency reprices
+   * them instead of silently changing what they mean.
+   */
+  budgetCurrency?: Currency;
 }
 
 export interface Category {

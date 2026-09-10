@@ -19,24 +19,33 @@ responsibility — see [Backups](#backups) below.
 **Groups** are the "separate pages" — each one gets its own tab, and the Summary
 adds them all up. Two ship by default; add, rename or remove them in Settings.
 
-**Monthly limits (ceilings).** Any expense group can be given a monthly spending
-limit in Settings. Once set, Summary and the Expenses tab show how much of it is
-gone, what is left, and how many days remain in the month. The bar turns amber
-past 80% of the limit and red once it is blown, and a tick mark on the bar shows
-where you would be if you spent evenly through the month — so "faster than the
-month" means you are outrunning your own budget even while still under it.
+**Monthly limits and goals.** Any expense group can carry two numbers, both set
+in Settings: a *limit*, the most you allow yourself in a month, and a *goal*,
+what you actually aim to spend — normally lower. Summary and the Expenses tab
+show how much is gone, what is left to the goal and to the limit, and how many
+days remain in the month.
 
-Limits are stored with their own currency, exactly like an entry, so switching
-your main currency reprices them instead of silently changing what they mean.
-Clearing the field removes the limit. There are no push notifications: with no
-server there is nothing to send them, so the limit is shown in the app instead.
+- The bar is green while you are within the goal, amber once you pass the goal
+  or reach 80% of the limit, and red once the limit is blown. Passing the goal is
+  deliberately only amber: the goal is what you hope for, the limit is what you
+  can afford.
+- A tall marker on the bar shows the goal. A thin tick shows where you would be
+  if you spent evenly through the month, so "faster than the month" means you are
+  outrunning your goal even while still under it.
+- Either number works on its own. With only a goal, the bar measures against it.
+
+Both numbers share one currency per group, stored like an entry's currency, so
+switching your main currency reprices them instead of silently changing what they
+mean. Clearing a field removes it. There are no push notifications: with no server
+there is nothing to send them, so everything is shown in the app instead.
 
 **Categories** are the "type" you filter and total by. Expenses and income have
 their own separate lists.
 
-**Currencies.** Every entry keeps the currency you actually paid in (USD or COP).
-Totals are converted into whichever you set as your main currency, using a rate
-you control in Settings — nothing is fetched from the internet. Amount input is
+**Currencies.** Every entry keeps the currency you actually paid in (USD or COP);
+new entries start in your main currency, which is COP by default. Totals are
+converted into the main currency using a rate you control in Settings — nothing
+is fetched from the internet. Amount input is
 currency-aware: typing `1.250.000` under COP means 1,250,000 pesos, while `1.250`
 under USD means one dollar twenty-five.
 

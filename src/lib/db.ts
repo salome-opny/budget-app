@@ -21,12 +21,28 @@ const db = new Dexie("budget") as Dexie & {
   settings: EntityTable<Settings, "id">;
 };
 
-db.version(1).stores({
+const SCHEMA = {
   groups: "id, kind, order",
   categories: "id, kind, order",
   txns: "id, date, kind, groupId, categoryId",
   settings: "id",
-});
+};
+
+db.version(1).stores(SCHEMA);
+
+// v2 changes no indexes. It moves an install that was seeded with USD over to
+// COP, now that pesos are the default. Entries keep their own currency, so this
+// only changes how totals are displayed, and the toggle in Settings reverses it.
+db.version(2)
+  .stores(SCHEMA)
+  .upgrade((tx) =>
+    tx
+      .table("settings")
+      .toCollection()
+      .modify((s: Settings) => {
+        s.primaryCurrency = "COP";
+      })
+  );
 
 export const newId = () =>
   typeof crypto !== "undefined" && crypto.randomUUID
@@ -56,6 +72,13 @@ const seedCategories: Array<[string, Category["kind"]]> = [
   ["Other", "income"],
 ];
 
+export const DEFAULT_SETTINGS: Settings = {
+  id: "settings",
+  primaryCurrency: "COP",
+  copPerUsd: 4000,
+  lastBackupAt: null,
+};
+
 db.on("populate", async () => {
   await db.groups.bulkAdd(
     seedGroups.map(([name, kind], i) => ({
@@ -75,19 +98,7 @@ db.on("populate", async () => {
       color: PALETTE[i % PALETTE.length],
     }))
   );
-  await db.settings.add({
-    id: "settings",
-    primaryCurrency: "USD",
-    copPerUsd: 4000,
-    lastBackupAt: null,
-  });
+  await db.settings.add({ ...DEFAULT_SETTINGS });
 });
-
-export const DEFAULT_SETTINGS: Settings = {
-  id: "settings",
-  primaryCurrency: "USD",
-  copPerUsd: 4000,
-  lastBackupAt: null,
-};
 
 export default db;

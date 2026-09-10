@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useCategories, useGroups } from "@/lib/hooks";
+import { useCategories, useGroups, useSettings } from "@/lib/hooks";
 import { addTxn, deleteTxn, updateTxn } from "@/lib/mutations";
 import { parseAmount } from "@/lib/money";
 import { todayISO } from "@/lib/dates";
@@ -27,7 +27,11 @@ export default function TxnSheet({
   const categories = useCategories(kind);
 
   const [amount, setAmount] = useState(editing ? String(editing.amount) : "");
-  const [currency, setCurrency] = useState<Currency>(editing?.currency ?? "USD");
+  const settings = useSettings();
+  // An edited entry keeps its own currency; a new one starts in the main
+  // currency. Derived, so it follows settings that finish loading after mount.
+  const [pickedCurrency, setCurrency] = useState<Currency | null>(editing?.currency ?? null);
+  const currency = pickedCurrency ?? settings.primaryCurrency;
   const [date, setDate] = useState(editing?.date ?? todayISO());
   const [groupId, setGroupId] = useState(editing?.groupId ?? defaultGroupId ?? "");
   const [categoryId, setCategoryId] = useState(editing?.categoryId ?? "");

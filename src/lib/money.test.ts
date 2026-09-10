@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
-import { formatMoney, parseAmount, toPrimary } from "./money";
+import { formatMoney, formatMoneyShort, parseAmount, toPrimary } from "./money";
 
 const usd = { primaryCurrency: "USD" as const, copPerUsd: 4000 };
 const cop = { primaryCurrency: "COP" as const, copPerUsd: 4000 };
@@ -49,4 +49,14 @@ test("formatMoney shows cents for dollars and none for pesos", () => {
   assert.equal(formatMoney(1250.5, "USD"), "$1,250.50");
   // Intl separates the COP code with a non-breaking space.
   assert.equal(formatMoney(1250000, "COP"), "COP\u00a01,250,000");
+});
+
+test("formatMoneyShort keeps small amounts exact and shortens large ones", () => {
+  assert.equal(formatMoneyShort(1892.75, "USD"), "$1,892.75");
+  assert.equal(formatMoneyShort(99_999, "COP"), "COP\u00a099,999");
+  assert.equal(formatMoneyShort(340_000, "COP"), "COP\u00a0340k");
+  assert.equal(formatMoneyShort(1_340_000, "COP"), "COP\u00a01.34M");
+  assert.equal(formatMoneyShort(15_340_000, "COP"), "COP\u00a015.3M");
+  assert.equal(formatMoneyShort(20_000_000, "COP"), "COP\u00a020M");
+  assert.equal(formatMoneyShort(999_600, "COP"), "COP\u00a01M");
 });

@@ -147,17 +147,17 @@ const group = (over: Partial<Group>): Group => ({
 
 test("budgetStatuses ignores groups without a ceiling", () => {
   const groups = [
-    group({ id: "a", limitAmount: 1000, limitCurrency: "USD" }),
+    group({ id: "a", limitAmount: 1000, budgetCurrency: "USD" }),
     group({ id: "b" }),
     group({ id: "c", limitAmount: null }),
-    group({ id: "d", limitAmount: 0, limitCurrency: "USD" }),
+    group({ id: "d", limitAmount: 0, budgetCurrency: "USD" }),
   ];
   const got = budgetStatuses([], settings, groups, "2026-08");
   assert.deepEqual(got.map((s) => s.groupId), ["a"]);
 });
 
 test("budgetStatuses only counts that group's expenses in that month", () => {
-  const groups = [group({ id: "a", limitAmount: 1000, limitCurrency: "USD" })];
+  const groups = [group({ id: "a", limitAmount: 1000, budgetCurrency: "USD" })];
   const rows = [
     txn({ groupId: "a", date: "2026-08-05", amount: 300 }),
     // Other group, other month, and income all have to be excluded.
@@ -172,7 +172,7 @@ test("budgetStatuses only counts that group's expenses in that month", () => {
 });
 
 test("budgetStatuses converts a ceiling set in pesos", () => {
-  const groups = [group({ id: "a", limitAmount: 4000000, limitCurrency: "COP" })];
+  const groups = [group({ id: "a", limitAmount: 4000000, budgetCurrency: "COP" })];
   // 4,000,000 COP at 4000 per dollar is a $1,000 ceiling.
   const [s] = budgetStatuses([txn({ groupId: "a", amount: 250 })], settings, groups, "2026-08");
   assert.equal(s.limit, 1000);
@@ -185,7 +185,7 @@ test("budgetStatuses reports under, near and over", () => {
     budgetStatuses(
       [txn({ groupId: "a", amount: spent })],
       settings,
-      [group({ id: "a", limitAmount: 100, limitCurrency: "USD" })],
+      [group({ id: "a", limitAmount: 100, budgetCurrency: "USD" })],
       "2026-08"
     )[0];
   assert.equal(mk(50).state, "under");
@@ -199,8 +199,8 @@ test("budgetStatuses reports under, near and over", () => {
 
 test("budgetStatuses puts the most strained group first", () => {
   const groups = [
-    group({ id: "calm", limitAmount: 1000, limitCurrency: "USD" }),
-    group({ id: "blown", limitAmount: 100, limitCurrency: "USD" }),
+    group({ id: "calm", limitAmount: 1000, budgetCurrency: "USD" }),
+    group({ id: "blown", limitAmount: 100, budgetCurrency: "USD" }),
   ];
   const rows = [
     txn({ groupId: "calm", amount: 100 }),
@@ -224,4 +224,50 @@ test("daysLeftInMonth counts today as still available", () => {
   assert.equal(daysLeftInMonth("2026-08", "2026-08-31"), 1);
   assert.equal(daysLeftInMonth("2026-08", "2026-08-01"), 31);
   assert.equal(daysLeftInMonth("2026-08", "2026-09-05"), 0);
+});
+
+test("budgetStatuses tracks a goal on its own, and never calls it over", () => {
+  const groups = [group({ id: "a", goalAmount: 500, budgetCurrency: "USD" })];
+  const at = (spent: number) =>
+    budgetStatuses([txn({ groupId: "a", amount: spent })], settings, groups, "2026-08")[0];
+  assert.equal(at(400).state, "under");
+  assert.equal(at(400).toGoal, 100);
+  assert.equal(at(400).limit, null);
+  assert.equal(at(400).scale, 500);
+  // A goal is aspirational: blowing it warns, it does not go red.
+  assert.equal(at(900).state, "past-goal");
+  assert.equal(at(900).toGoal, -400);
+});
+
+test("budgetStatuses warns past the goal even while far under the ceiling", () => {
+  const groups = [group({ id: "a", limitAmount: 1000, goalAmount: 400, budgetCurrency: "USD" })];
+  const [s] = budgetStatuses([txn({ groupId: "a", amount: 500 })], settings, groups, "2026-08");
+  assert.equal(s.state, "past-goal");
+  assert.equal(s.scale, 1000);
+  assert.equal(s.remaining, 500);
+  assert.equal(s.toGoal, -100);
+});
+
+test("budgetStatuses lets the ceiling outrank the goal when both are in trouble", () => {
+  const groups = [group({ id: "a", limitAmount: 1000, goalAmount: 400, budgetCurrency: "USD" })];
+  const at = (spent: number) =>
+    budgetStatuses([txn({ groupId: "a", amount: spent })], settings, groups, "2026-08")[0].state;
+  assert.equal(at(300), "under");
+  assert.equal(at(850), "near");
+  assert.equal(at(1200), "over");
+});
+
+test("budgetStatuses converts limit and goal with the group's one currency", () => {
+  const groups = [
+    group({ id: "a", limitAmount: 4000000, goalAmount: 2000000, budgetCurrency: "COP" }),
+  ];
+  const [s] = budgetStatuses([], settings, groups, "2026-08");
+  assert.equal(s.limit, 1000);
+  assert.equal(s.goal, 500);
+});
+
+test("budgetStatuses reads a group with no stored currency in the main currency", () => {
+  const cop = { primaryCurrency: "COP" as const, copPerUsd: 4000 };
+  const [s] = budgetStatuses([], cop, [group({ id: "a", limitAmount: 2000000 })], "2026-08");
+  assert.equal(s.limit, 2000000);
 });
