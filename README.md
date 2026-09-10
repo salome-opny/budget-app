@@ -43,13 +43,27 @@ clearing Safari's storage or changing phones.
 
 ## Installing it on an iPhone
 
-1. Open the deployed URL in **Safari** (it must be Safari — Chrome on iOS cannot
-   install web apps).
+1. Open <https://salome-opny.github.io/budget-app/> in **Safari** (it must be
+   Safari — Chrome on iOS cannot install web apps).
 2. Tap the share button, then **Add to Home Screen**.
 3. It gets its own icon and opens full-screen, with no browser chrome.
 
-Once installed it works offline: a service worker caches the app shell, and the
-data was always local anyway.
+Once installed it should work offline: a service worker caches the app shell, and
+the data was always local anyway. If registration fails for any reason the app
+still works — it just needs the network to load.
+
+## Deployment
+
+Pushing to `main` runs `.github/workflows/deploy.yml`, which tests, builds and
+publishes to GitHub Pages.
+
+The site is served from a subfolder (`/budget-app`), not a domain root, so every
+absolute URL has to carry that prefix. It comes from `NEXT_PUBLIC_BASE_PATH`,
+set in the workflow and read by both `next.config.ts` and `src/lib/basePath.ts`.
+It is empty locally, so `npm run dev` still serves from `/`.
+
+**If the repo is ever renamed, change `NEXT_PUBLIC_BASE_PATH` in the workflow to
+match** — otherwise the deployed page loads with no styles or scripts.
 
 ## Running it locally
 

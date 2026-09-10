@@ -2,19 +2,19 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import BottomNav from "@/components/BottomNav";
 import ServiceWorker from "@/components/ServiceWorker";
+import { withBase } from "@/lib/basePath";
 
 export const metadata: Metadata = {
   title: "Budget",
   description: "Personal income and expense tracker. Your data stays on this device.",
-  manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     title: "Budget",
     statusBarStyle: "default",
   },
   icons: {
-    icon: "/icon-192.png",
-    apple: "/apple-touch-icon.png",
+    icon: withBase("/icon-192.png"),
+    apple: withBase("/apple-touch-icon.png"),
   },
 };
 
