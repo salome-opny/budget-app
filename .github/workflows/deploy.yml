@@ -42,11 +42,10 @@ jobs:
       # and serves a blank page.
       - run: touch out/.nojekyll
 
+      # Pages itself has to be switched on once by hand, under
+      # Settings -> Pages -> Source: GitHub Actions. The workflow token is not
+      # allowed to create the site, only to publish to an existing one.
       - uses: actions/configure-pages@v5
-        with:
-          # Turns Pages on for the repo on the first run, so there is no
-          # manual step in Settings before the first deploy.
-          enablement: true
 
       - uses: actions/upload-pages-artifact@v3
         with:
